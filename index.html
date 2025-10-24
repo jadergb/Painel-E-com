@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Vendas - E-commerce</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="container my-4">
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Total de Vendas</h5>
+            <p class="card-text" id="total-vendas">R$ 0</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Pedidos</h5>
+            <p class="card-text" id="total-pedidos">0</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Produtos do Catálogo Externo</h5> 
+            <p class="card-text" id="total-clientes">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Vendas e Produtos por Categoria</h5>
+        <div class="col-md-5 mx-auto">
+          <canvas id="grafico-categorias"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <section class="container mt-5">
+      <h2>Adicionar Venda</h2>
+      <form id="formVenda" class="mb-3">
+        <div class="row g-2">
+          <div class="col-md-5">
+            <input type="text" id="categoria" class="form-control" placeholder="Categoria" required>
+          </div>
+          <div class="col-md-5">
+            <input type="number" id="valor" class="form-control" placeholder="Valor (R$)" required>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-success w-100">Adicionar</button>
+          </div>
+        </div>
+      </form>
+
+      <table class="table table-striped" id="tabelaVendas">
+        <thead>
+          <tr>
+            <th>Categoria</th>
+            <th>Valor (R$)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const ctx = document.getElementById('grafico-categorias');
+    let grafico;
+    const API_URL = "http://localhost:3000/vendas"; 
+
+    function atualizarGrafico(categorias, valores) {
+      if (grafico) grafico.destroy();
+
+      grafico = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: categorias,
+          datasets: [{
+            label: 'Vendas',
+            data: valores,
+            backgroundColor: ['#008026', '#004DFF', '#750787', '#FF5733', '#FFC300', '#C70039', '#900C3F', '#581845', '#FF1493', '#00CED1']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: true }
+      });
+    }
+    async function carregarDadosCombinados() {
+      try {
+        const resVendas = await fetch(API_URL);
+        const vendas = await resVendas.json();
+        const resAPI = await fetch("https://fakestoreapi.com/products");
+        const produtos = await resAPI.json();
+        const categoriasAgrupadas = {};
+
+        vendas.forEach(v => {
+          if (categoriasAgrupadas[v.categoria]) {
+            categoriasAgrupadas[v.categoria] += v.valor;
+          } else {
+            categoriasAgrupadas[v.categoria] = v.valor;
+          }
+        });
+
+        const categorias = Object.keys(categoriasAgrupadas);
+        const valores = Object.values(categoriasAgrupadas);
+        const totalVendas = vendas.reduce((acc, v) => acc + v.valor, 0);
+
+        document.getElementById('total-vendas').innerText = `R$ ${totalVendas}`;
+        document.getElementById('total-pedidos').innerText = vendas.length;
+        document.getElementById('total-clientes').innerText = produtos.length;
+
+        const tbody = document.querySelector("#tabelaVendas tbody");
+        tbody.innerHTML = "";
+        vendas.forEach(v => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${v.categoria}</td><td>R$ ${v.valor}</td>`;
+          tbody.appendChild(tr);
+        });
+
+        atualizarGrafico(categorias, valores);
+
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      }
+    }
+
+    document.querySelector("#formVenda").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const categoria = document.querySelector("#categoria").value;
+      const valor = parseFloat(document.querySelector("#valor").value);
+
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoria, valor })
+      });
+
+      e.target.reset();
+      carregarDadosCombinados();
+    });
+
+    carregarDadosCombinados();
+  </script>
+</body>
+</html>
