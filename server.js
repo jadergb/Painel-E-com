@@ -1,22 +1,27 @@
 const express = require("express");
 const Parse = require("parse/node.js");
 const path = require("path");
-const bodyParser = require("body-parser");
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
+
+app.use(express.json());
+
 
 Parse.initialize(
   "jkOXA2vgoPRHDsnlUs7SbEzLlSu782TpiDedZYs8", 
-  "OS4T49WJFOXSaHtt8TutHelUfMNOpSRaKwbuwyqe" 
+  "OS4T49WJFOXSaHtt8TutHelUfMNOpSRaKwbuwyqe"  
 );
 Parse.serverURL = "https://parseapi.back4app.com/";
 
+
 app.get("/", (req, res) => {
+
   res.sendFile(path.join(__dirname, "index.html"));
 });
+
 
 app.get("/vendas", async (req, res) => {
   try {
@@ -30,20 +35,24 @@ app.get("/vendas", async (req, res) => {
       valor: obj.get("valor")
     }));
 
-    res.json(dados);
+    res.json(dados); // Envia os dados como resposta
   } catch (error) {
     res.status(500).json({ erro: error.message });
   }
 });
 
+
 app.post("/vendas", async (req, res) => {
   try {
-    const { categoria, valor } = req.body;
+    const { categoria, valor } = req.body; 
+
     const Vendas = Parse.Object.extend("Vendas");
     const venda = new Vendas();
+    
     venda.set("categoria", categoria);
-    venda.set("valor", valor);
-    const resultado = await venda.save();
+    venda.set("valor", valor); 
+
+    const resultado = await venda.save(); 
     res.status(201).json({ id: resultado.id, categoria, valor });
   } catch (error) {
     res.status(500).json({ erro: error.message });
@@ -53,3 +62,4 @@ app.post("/vendas", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
+
