@@ -2,6 +2,8 @@ const express = require("express");
 const Parse = require("parse/node.js");
 const path = require("path");
 
+
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -17,7 +19,9 @@ Parse.serverURL = "https://parseapi.back4app.com/";
 
 
 app.get("/", (req, res) => {
-  
+
+
+
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
@@ -28,18 +32,23 @@ app.get("/vendas", async (req, res) => {
     const query = new Parse.Query(Vendas);
     const resultados = await query.find();
 
-    
+
     const dados = resultados.map(obj => ({
       id: obj.id,
       categoria: obj.get("categoria"),
       valor: obj.get("valor")
     }));
 
+
     res.json(dados); 
+
+    res.json(dados); // Envia os dados como resposta
+
   } catch (error) {
     res.status(500).json({ erro: error.message });
   }
 });
+
 
 app.post("/vendas", async (req, res) => {
   try {
